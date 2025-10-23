@@ -1,41 +1,29 @@
-from src.core.cost_function import CostFunctionConfig
-from typing import Optional
+from src.config.cost_function_config import CostFunctionConfig
+from src.config.general_config import GeneralConfig
+from src.config.crossing_config import CrossingConfig
+from src.config.elite_strategy_config import EliteStrategyConfig
+from src.config.general_config import GeneralConfig
+from src.config.inversion_config import InversionConfig
+from src.config.mutation_config import MutationConfig
+from src.config.selection_config import SelectionConfig
+
 
 class SimulationConfiguration:
-    def __init__(self, population_size: int, epochs_no: int, cost_function_config: CostFunctionConfig) -> None:
-        self.population_size = population_size
-        self.epochs_no = epochs_no
-        self.cost_function_config = cost_function_config
+    def __init__(
+        self,
+        cost_function_config: CostFunctionConfig, 
+        crossing_config: CrossingConfig,
+        elite_strategy_config: EliteStrategyConfig,
+        general_config: GeneralConfig,
+        inversion_config: InversionConfig,
+        mutation_config: MutationConfig,
+        selection_config: SelectionConfig) -> None:
         
-    def validate(self) -> bool:
-        """Validate the simulation configuration"""
-        if self.population_size <= 0:
-            return False
-        if self.epochs_no <= 0:
-            return False
-        return True
+        self.cost_function_config = cost_function_config
+        self.crossing_config = crossing_config
+        self.elite_strategy_config = elite_strategy_config
+        self.general_config = general_config
+        self.inversion_config = inversion_config
+        self.mutation_config = mutation_config
+        self.selection_config = selection_config
 
-class SelectionConfig:
-    def __init__(self, selection_type: str, tournament_size: Optional[int] = None):
-        assert selection_type is not None
-
-        self.selection_type = selection_type
-        self.tournament_size = tournament_size
-
-class CrossingConfig:
-    def __init__(self, crossing_type: str, probability: float):
-        self.crossing_type = crossing_type
-        self.probability = probability
-
-class MutationConfig:
-    def __init__(self, mutation_type: str, probability: float):
-        self.mutation_type = mutation_type
-        self.probability = probability
-
-class InversionConfig:
-    def __init__(self, probability: float):
-        self.probability = probability
-
-class ElitaryStrategyConfig:
-    def __init__(self, percentage: float):
-        self.percentage = percentage
