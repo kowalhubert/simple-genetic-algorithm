@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import ttk
 from src.config.cost_function_config import CostFunctionConfig
 from src.config.crossing_config import CrossingConfig
-from src.config.elite_strategy_config import EliteStrategyConfig
 from src.config.general_config import GeneralConfig
 from src.config.inversion_config import InversionConfig
 from src.config.mutation_config import MutationConfig
@@ -15,6 +14,7 @@ from src.core.crossing import CrossingMethodType
 from src.core.mutation import MutationMethodType
 from src.core.selection import SelectionMethodType
 from src.core.simulation import Simulation
+from src.core.unit import UnitFactory
 
 class SimulationUI:
     __EPOCHS_NUMBER_DEFAULT = 10
@@ -27,7 +27,7 @@ class SimulationUI:
     __SELECTION_TYPE_DEFAULT = SelectionMethodType.BEST.value
     __SELECTION_PERCENTAGE_DEFAULT = 20
     
-    __CROSSING_FUNC_TYPE = CrossingMethodType.SINGLE_POINT.value
+    __CROSSING_FUNC_TYPE_DEFAULT = CrossingMethodType.SINGLE_POINT.value
     __CROSSING_GRAIN_SIZE_DEFAULT = 3
     
     __MUTATION_TYPE_DEFAULT = MutationMethodType.SINGLE_POINT.value
@@ -35,7 +35,7 @@ class SimulationUI:
 
     __INVERSION_PROBABILITY = 20
 
-    __ELITE_STRATEGY_UNIT_COUNT = 0
+    __ELITE_STRATEGY_UNIT_COUNT = 1
 
     def __init__(self, master):
         self.master = master
@@ -113,7 +113,6 @@ class SimulationUI:
             frame, textvariable=self.selection_function_var, state="readonly",
             values=[cf.value for cf in SelectionMethodType]
         )
-        self.selection_function_combo.current(0)
         self.selection_function_combo.grid(row=3, column=1, pady=8, sticky=(tk.W, tk.E))
 
         ### selection percentage
@@ -141,13 +140,12 @@ class SimulationUI:
     def _setup_crossing_config(self, frame):
         ### crossing function type
         ttk.Label(frame, text="Crossing type:").grid(row=4, column=0, sticky=tk.W, pady=8)
-        self.crossing_function_var = tk.StringVar(value=self.__CROSSING_FUNC_TYPE)
+        self.crossing_function_var = tk.StringVar(value=self.__CROSSING_FUNC_TYPE_DEFAULT)
         self.crossing_function_map = {cf.value: cf for cf in CrossingMethodType}
         self.crossing_function_combo = ttk.Combobox(
             frame, textvariable=self.crossing_function_var, state="readonly",
             values=[cf.value for cf in CrossingMethodType]
         )
-        self.crossing_function_combo.current(0)
         self.crossing_function_combo.grid(row=4, column=1, pady=8, sticky=(tk.W, tk.E))
 
         def on_crossing_function_change(event):
@@ -179,7 +177,6 @@ class SimulationUI:
             state="readonly",
             values=[m.value for m in MutationMethodType]
         )
-        self.mutation_function_combo.current(0)
         self.mutation_function_combo.grid(row=5, column=1, pady=8, sticky=(tk.W, tk.E))
 
         # Mutation probability
@@ -199,7 +196,6 @@ class SimulationUI:
         self.elite_count_var = tk.IntVar(value=self.__ELITE_STRATEGY_UNIT_COUNT)
         ttk.Entry(frame, textvariable=self.elite_count_var).grid(row=6, column=3, pady=8, sticky=(tk.W, tk.E))
 
-
     def _add_start_button(self, frame):
         # Remove any existing button if needed (optional, in current layout only one created).
 
@@ -209,15 +205,23 @@ class SimulationUI:
         start_button = ttk.Button(frame, text="Start", command=self._start_simulation)
         # Set sticky to 's' (south) and 'ew' to center horizontally and pin to the bottom row.
         start_button.grid(row=100, column=0, columnspan=4, pady=15, sticky='sew')
-        
 
     def _get_config(self) -> SimulationConfiguration:
         try:
+            # to move upper (UI)
+            is_maxim_case = False
+            
             # general config
             general_config = GeneralConfig(self.population_var.get(), self.epochs_var.get(), self.chromosome_repr_precision_var.get() )
             
             # cost function config
             cost_function_config = CostFunctionConfig(self.dimensions_var.get(), self.cost_function_map[self.cost_function_var.get()])
+
+            # unit factory
+            suggested_bounds = cost_function_config.cost_func.suggested_bounds()
+
+            lower_bound, upper_bound = suggested_bounds[0][0], suggested_bounds[1][0]
+            unit_factory = UnitFactory(lower_bound, upper_bound, 6)
 
             # selection function config
             tournament_size = None
@@ -226,27 +230,25 @@ class SimulationUI:
                 self.tournament_size_entry.grid_remove()
                 tournament_size = self.tournament_size_var.get()
 
-            selection_config = SelectionConfig(self.selection_function_map[self.selection_function_var.get()], self.selection_percentage_var.get(), tournament_size)
-            
+            selection_config = SelectionConfig(self.selection_function_map[self.selection_function_var.get()], self.selection_percentage_var.get(), is_maxim_case, tournament_size)
+
             # crossing config
             grain = None
             if hasattr(self, 'crossing_grain_label'):
                grain = self.crossing_grain_var.get()
-            crossing_config = CrossingConfig(self.crossing_function_map[self.crossing_function_var.get()], grain)
+        
+            crossing_config = CrossingConfig(self.crossing_function_map[self.crossing_function_var.get()], unit_factory, self.elite_count_var.get(), grain=grain)
 
             # mutation config
-            mutation_config = MutationConfig(self.mutation_function_map[self.mutation_function_var.get()], self.mutation_probability_var.get())
+            mutation_config = MutationConfig(unit_factory, self.mutation_function_map[self.mutation_function_var.get()], self.mutation_probability_var.get())
 
             # inversion config
-            inversion_config = InversionConfig(self.inversion_probability_var.get())
+            inversion_config = InversionConfig(unit_factory, self.inversion_probability_var.get())
 
-            # elite strategy config
-            elite_strategy_config = EliteStrategyConfig(self.elite_count_var.get())
-        
             return SimulationConfiguration(
+                unit_factory,
                 cost_function_config,
                 crossing_config,
-                elite_strategy_config,
                 general_config,
                 inversion_config,
                 mutation_config,
@@ -274,7 +276,7 @@ class SimulationUI:
         self.selection_percentage_var.set(self.__SELECTION_PERCENTAGE_DEFAULT)
 
         # crossing config
-        self.crossing_function_var.set(self.__CROSSING_FUNC_TYPE)
+        self.crossing_function_var.set(self.__CROSSING_FUNC_TYPE_DEFAULT)
         if hasattr(self, 'crossing_grain_label'):
             self.crossing_grain_label.grid_remove()
             self.crossing_grain_entry.grid_remove()

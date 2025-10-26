@@ -1,6 +1,10 @@
+from src.core.unit import UnitFactory
 from abc import ABC, abstractmethod
 from enum import Enum
 import random
+import math
+
+from src.core.unit import Unit
 
 class CrossingMethodType(Enum):
     SINGLE_POINT = "Single-point"
@@ -9,65 +13,101 @@ class CrossingMethodType(Enum):
     GRAIN = "Grain"
 
 class AbstractCrossing(ABC):
+    def __init__(self, unit_factory: 'UnitFactory'):
+        self.unit_factory = unit_factory
+
     @abstractmethod
-    def cross(self, parent1, parent2, **kwargs):
+    def cross(self, parent1: Unit, parent2: Unit,) -> tuple[Unit, Unit]:
         pass
 
 class SinglePointCrossing(AbstractCrossing):
-    def cross(self, parent1, parent2, **kwargs):
-        # Assume parent1 and parent2 are list-like (e.g., lists of genes)
-        length = len(parent1)
-        if length < 2:
-            return parent1[:], parent2[:]
-        point = random.randint(1, length - 1)
-        offspring1 = parent1[:point] + parent2[point:]
-        offspring2 = parent2[:point] + parent1[point:]
-        return offspring1, offspring2
+    def __init__(self, unit_factory: 'UnitFactory'):
+        super().__init__(unit_factory)
+
+    def cross(self, parent1: Unit, parent2: Unit):
+        dim = len(parent1.real_values)
+        if dim < 2:
+            return parent1, parent2
+        point = random.randint(1, dim - 1)
+
+        child1_binaries = []
+        child2_binaries = []
+
+        for d in range(dim):
+            ch1_bin_chain = parent1.binary_values[d][:point] + parent2.binary_values[d][point:] 
+            ch2_bin_chain = parent2.binary_values[d][:point] + parent1.binary_values[d][point:]
+        
+            child1_binaries.append(ch1_bin_chain)
+            child2_binaries.append(ch2_bin_chain)
+
+        return (self.unit_factory.create_unit_with_binary_values(child1_binaries),
+                self.unit_factory.create_unit_with_binary_values(child2_binaries))
 
 class TwoPointCrossing(AbstractCrossing):
-    def cross(self, parent1, parent2, **kwargs):
-        length = len(parent1)
-        if length < 3:
-            return parent1[:], parent2[:]
-        point1 = random.randint(1, length - 2)
-        point2 = random.randint(point1 + 1, length - 1)
-        offspring1 = (
-            parent1[:point1]
-            + parent2[point1:point2]
-            + parent1[point2:]
-        )
-        offspring2 = (
-            parent2[:point1]
-            + parent1[point1:point2]
-            + parent2[point2:]
-        )
-        return offspring1, offspring2
+    def __init__(self, unit_factory: 'UnitFactory'):
+        super().__init__(unit_factory)
+
+    def cross(self, parent1: Unit, parent2: Unit):
+        dim = len(parent1.real_values)
+        if dim < 3:
+            return SinglePointCrossing(self.unit_factory).cross(parent1, parent2)
+        # choose two points not at ends, so 1 .. dim-1
+        p1, p2 = sorted(random.sample(range(1, dim), 2))
+        child1_binaries = []
+        child2_binaries = []
+        for d in range(dim):
+            if d < p1:
+                child1_binaries.append(parent1.binary_values[d])
+                child2_binaries.append(parent2.binary_values[d])
+            elif d < p2:
+                child1_binaries.append(parent2.binary_values[d])
+                child2_binaries.append(parent1.binary_values[d])
+            else:
+                child1_binaries.append(parent1.binary_values[d])
+                child2_binaries.append(parent2.binary_values[d])
+        return (self.unit_factory.create_unit_with_binary_values(child1_binaries),
+                self.unit_factory.create_unit_with_binary_values(child2_binaries))
 
 class UniformCrossing(AbstractCrossing):
-    # todos
-    def cross(self, parent1, parent2, **kwargs):
-        length = len(parent1)
-        mask = [random.randint(0, 1) for _ in range(length)]
-        offspring1 = [parent1[i] if mask[i] else parent2[i] for i in range(length)]
-        offspring2 = [parent2[i] if mask[i] else parent1[i] for i in range(length)]
-        return offspring1, offspring2
+    def __init__(self, unit_factory: 'UnitFactory'):
+        super().__init__(unit_factory)
+
+    def cross(self, parent1: Unit, parent2: Unit):
+        dim = len(parent1.real_values)
+        child1_binaries = []
+        child2_binaries = []
+        for d in range(dim):
+            if random.random() < 0.5:
+                child1_binaries.append(parent1.binary_values[d])
+                child2_binaries.append(parent2.binary_values[d])
+            else:
+                child1_binaries.append(parent2.binary_values[d])
+                child2_binaries.append(parent1.binary_values[d])
+        return (self.unit_factory.create_unit_with_binary_values(child1_binaries),
+                self.unit_factory.create_unit_with_binary_values(child2_binaries))
 
 class GrainCrossing(AbstractCrossing):
-    def __init__(self, grain_size=2):
+    def __init__(self, unit_factory: 'UnitFactory', grain_size: int = 2):
+        super().__init__(unit_factory)
         self.grain_size = grain_size
 
-    def cross(self, parent1, parent2, **kwargs):
-        # "Grain" means crossover in fixed-size segments.
-        length = len(parent1)
-        offspring1 = []
-        offspring2 = []
-        toggle = True
-        for i in range(0, length, self.grain_size):
-            if toggle:
-                offspring1.extend(parent1[i:i+self.grain_size])
-                offspring2.extend(parent2[i:i+self.grain_size])
-            else:
-                offspring1.extend(parent2[i:i+self.grain_size])
-                offspring2.extend(parent1[i:i+self.grain_size])
-            toggle = not toggle
-        return offspring1, offspring2
+    def cross(self, parent1: Unit, parent2: Unit):
+        dim = len(parent1.real_values)
+        child1_binaries = []
+        child2_binaries = []
+        g = self.grain_size
+        for d in range(dim):
+            bin_len = len(parent1.binary_values[d])
+            child1_bin = []
+            child2_bin = []
+            toggle = False
+            for i in range(0, bin_len, g):
+                src1 = parent1.binary_values[d] if not toggle else parent2.binary_values[d]
+                src2 = parent2.binary_values[d] if not toggle else parent1.binary_values[d]
+                child1_bin.extend(list(src1[i:i+g]))
+                child2_bin.extend(list(src2[i:i+g]))
+                toggle = not toggle
+            child1_binaries.append(''.join(child1_bin))
+            child2_binaries.append(''.join(child2_bin))
+        return (self.unit_factory.create_unit_with_binary_values(child1_binaries),
+                self.unit_factory.create_unit_with_binary_values(child2_binaries))
