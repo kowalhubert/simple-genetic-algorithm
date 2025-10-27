@@ -5,6 +5,7 @@ class CostFunction(Enum):
     RASTRIGIN = ("Rastrigin", bf.Rastrigin)
     ROSENBROCK = ("Rosenbrock", bf.Rosenbrock)
     ACKLEY = ("Ackley", bf.Ackley)
+    HYPERSHPERE = ("Hypersphere", bf.Hypersphere)
 
     @property
     def name(self):

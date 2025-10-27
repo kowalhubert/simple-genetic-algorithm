@@ -1,6 +1,7 @@
 from ast import List
 from math import floor
 import random
+import time
 from src.config.simulation_config import SimulationConfiguration
 from src.core.selection import SelectionMethodType
 from src.core.unit import Unit
@@ -11,6 +12,10 @@ class Simulation:
         self._config = simulation_config
 
         self._population = []
+        self.std_cost_history = []
+        self.best_cost_history = []
+        self.avg_cost_history = []
+        self.elapsed_time = None
 
         self._cost_function = self._config.cost_function_config.cost_func
         self._population_size = self._config.general_config.population_size
@@ -33,23 +38,25 @@ class Simulation:
         self._inversion_func = self._config.inversion_config.inversion_func
 
     def start(self):
+        start_time = time.time()
+        
         # generate init values
         self._generate_init_population()
 
         for epoch in range(self._epochs_number):
-            print(f'Epoch {epoch + 1}')
+            # print(f'Epoch {epoch + 1}')
             
             # calculate cost function for each from the population
             self._calculate_costs()
 
-            # select elite units
+            # stuff for collecting metrics
+            self._update_metrics(epoch)
 
+            # select elite units
             # select units from population to cross
             selected_units = self._selection_func(self._population, self._selection_num)
 
-            # INSERT_YOUR_CODE
             # Extract the best elite units from selected_units
-            print(len(selected_units))
             selected_units_sorted = sorted(selected_units, key=lambda ind: ind.cost, reverse=self._is_maximim_case) 
 
             elites = selected_units_sorted[:self._elite_units_count]
@@ -66,7 +73,9 @@ class Simulation:
             self._population = self._inverse_units(mutated_units)
         
         self._calculate_costs()
-    
+        self._update_metrics(self._epochs_number)
+        self.elapsed_time = time.time() - start_time
+
     def _calculate_selection_size(self) -> int:
         if SelectionMethodType.TOURNAMENT == self._config.selection_config.selection_type:
             return self._config.selection_config.tournament_size
@@ -112,3 +121,27 @@ class Simulation:
 
     def _inverse_units(self, mutated_units: list[Unit]) -> list[Unit]:
         return [self._inversion_func(unit) for unit in mutated_units]
+
+    def _update_metrics(self, epoch: int) -> None:
+        # Find best cost depending on maximization/minimization
+        if self._is_maximim_case:
+            best_cost = max(unit.cost for unit in self._population)
+        else:
+            best_cost = min(unit.cost for unit in self._population)
+
+        # Calculate average cost
+        avg_cost = sum(unit.cost for unit in self._population) / len(self._population) if self._population else float('nan')
+
+        # Calculate standard deviation of costs
+        costs = [unit.cost for unit in self._population]
+        if len(costs) > 1:
+            mean = avg_cost
+            variance = sum((c - mean) ** 2 for c in costs) / (len(costs) - 1)
+            std_dev = variance ** 0.5
+        else:
+            std_dev = 0.0
+
+        # Store in history
+        self.std_cost_history.append(std_dev)
+        self.best_cost_history.append(best_cost)
+        self.avg_cost_history.append(avg_cost)

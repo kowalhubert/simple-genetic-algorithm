@@ -1,5 +1,5 @@
-import json
 from math import isnan, nan
+import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import ttk
 from src.config.cost_function_config import CostFunctionConfig
@@ -43,7 +43,10 @@ class SimulationUI:
         self.master.geometry('1200x580')
         self.master.resizable(False, False)
 
-        frame = ttk.Frame(master, padding="15")
+        self._setup_ui()
+
+    def _setup_ui(self):
+        frame = ttk.Frame(self.master, padding="15")
         frame.pack(expand=True, fill=tk.BOTH)
         
         # general config
@@ -152,8 +155,8 @@ class SimulationUI:
             selected_type = self.crossing_function_var.get()
 
             if hasattr(self, 'crossing_grain_label'):
-                self.crossing_grain_label.grid_remove()
-                self.crossing_grain_entry.grid_remove()
+                self.crossing_grain_label.destroy()
+                self.crossing_grain_entry.destroy()
 
             if selected_type == CrossingMethodType.GRAIN.value:
                 self.crossing_grain_var = tk.IntVar(value=self.__CROSSING_GRAIN_SIZE_DEFAULT)
@@ -222,6 +225,8 @@ class SimulationUI:
 
             lower_bound, upper_bound = suggested_bounds[0][0], suggested_bounds[1][0]
             unit_factory = UnitFactory(lower_bound, upper_bound, 6)
+
+            print(f'Bounds: {lower_bound} | {upper_bound}')
 
             # selection function config
             tournament_size = None
@@ -314,7 +319,7 @@ class SimulationUI:
         simulation.start()
 
         self._close_loading_window()
-        self._switch_to_results_page()
+        self._switch_to_results_page(simulation)
 
     def _open_loading_window(self):
         loading_window = tk.Toplevel(self.master)
@@ -329,11 +334,55 @@ class SimulationUI:
     def _close_loading_window(self):
         self.loading_window.destroy()
 
-    def _switch_to_results_page(self):
+    def _switch_to_results_page(self, simulation: Simulation):
         self._clear_page()
+        self._draw_charts(simulation)
 
-        empty_label = ttk.Label(self.master, text="Simulation complete. (Result page placeholder)", font=("Arial", 16))
-        empty_label.pack(expand=True, fill='both')
+        elapsed_time_sec = simulation.elapsed_time
+        self.elapsed_label = ttk.Label(
+            self.master,
+            text=f"Simulation run time: {elapsed_time_sec:.2f} seconds",
+            font=("Arial", 14)
+        )
+        self.elapsed_label.pack(pady=(10, 5))
+
+    def _draw_charts(self, simulation: Simulation):
+        # Prepare data
+        epochs = list(range(len(simulation.best_cost_history)))
+        best_cost = simulation.best_cost_history
+        avg_cost = simulation.avg_cost_history
+        std_cost = simulation.std_cost_history
+
+        # Create a new matplotlib figure with two subplots
+        fig, axs = plt.subplots(3, 1, figsize=(8, 6))
+        fig.suptitle('Simulation Results')
+
+        # Plot Best Cost History
+        axs[0].plot(epochs, best_cost, label='Best Cost', color='blue')
+        axs[0].set_title('Best Cost per Epoch')
+        axs[0].set_xlabel('Epoch')
+        axs[0].set_ylabel('Best Cost')
+        axs[0].legend()
+        axs[0].grid(True)
+
+        # Plot Average Cost History
+        axs[1].plot(epochs, avg_cost, label='Average Cost', color='green')
+        axs[1].set_title('Average Cost per Epoch')
+        axs[1].set_xlabel('Epoch')
+        axs[1].set_ylabel('Average Cost')
+        axs[1].legend()
+        axs[1].grid(True)
+
+        # Plot Standard Deviation of Cost History
+        axs[2].plot(epochs, std_cost, label='Standard Deviation', color='red')
+        axs[2].set_title('Standard Deviation of Cost per Epoch')
+        axs[2].set_xlabel('Epoch')
+        axs[2].set_ylabel('Standard Deviation')
+        axs[2].legend()
+        axs[2].grid(True)
+
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        plt.show()
 
     def _clear_page(self):
         for widget in self.master.winfo_children():
