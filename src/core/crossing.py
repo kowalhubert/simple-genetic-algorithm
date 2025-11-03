@@ -13,18 +13,23 @@ class CrossingMethodType(Enum):
     GRAIN = "Grain"
 
 class AbstractCrossing(ABC):
-    def __init__(self, unit_factory: 'UnitFactory'):
+    def __init__(self, probability: int, unit_factory: 'UnitFactory'):
+        self.probability = probability
         self.unit_factory = unit_factory
 
-    @abstractmethod
     def cross(self, parent1: Unit, parent2: Unit,) -> tuple[Unit, Unit]:
+        if random.randint(1, 100) <= self.probability:
+            return self._perform_cross(parent1, parent2)
+        else:
+            return parent1, parent2
+        pass
+
+    @abstractmethod
+    def _perform_cross(self, parent1: Unit, parent2: Unit,) -> tuple[Unit, Unit]:
         pass
 
 class SinglePointCrossing(AbstractCrossing):
-    def __init__(self, unit_factory: 'UnitFactory'):
-        super().__init__(unit_factory)
-
-    def cross(self, parent1: Unit, parent2: Unit):
+    def _perform_cross(self, parent1: Unit, parent2: Unit):
         dim = len(parent1.real_values)
         if dim < 2:
             return parent1, parent2
@@ -44,10 +49,7 @@ class SinglePointCrossing(AbstractCrossing):
                 self.unit_factory.create_unit_with_binary_values(child2_binaries))
 
 class TwoPointCrossing(AbstractCrossing):
-    def __init__(self, unit_factory: 'UnitFactory'):
-        super().__init__(unit_factory)
-
-    def cross(self, parent1: Unit, parent2: Unit):
+    def _perform_cross(self, parent1: Unit, parent2: Unit):
         dim = len(parent1.real_values)
         if dim < 3:
             return SinglePointCrossing(self.unit_factory).cross(parent1, parent2)
@@ -69,10 +71,7 @@ class TwoPointCrossing(AbstractCrossing):
                 self.unit_factory.create_unit_with_binary_values(child2_binaries))
 
 class UniformCrossing(AbstractCrossing):
-    def __init__(self, unit_factory: 'UnitFactory'):
-        super().__init__(unit_factory)
-
-    def cross(self, parent1: Unit, parent2: Unit):
+    def _perform_cross(self, parent1: Unit, parent2: Unit):
         dim = len(parent1.real_values)
         child1_binaries = []
         child2_binaries = []
@@ -87,11 +86,11 @@ class UniformCrossing(AbstractCrossing):
                 self.unit_factory.create_unit_with_binary_values(child2_binaries))
 
 class GrainCrossing(AbstractCrossing):
-    def __init__(self, unit_factory: 'UnitFactory', grain_size: int = 2):
-        super().__init__(unit_factory)
+    def __init__(self, probablity: int, unit_factory: 'UnitFactory', grain_size: int = 2):
+        super().__init__(probablity, unit_factory)
         self.grain_size = grain_size
 
-    def cross(self, parent1: Unit, parent2: Unit):
+    def _perform_cross(self, parent1: Unit, parent2: Unit):
         dim = len(parent1.real_values)
         child1_binaries = []
         child2_binaries = []

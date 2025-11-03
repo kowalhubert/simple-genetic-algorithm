@@ -13,6 +13,10 @@ class MutationConfig:
 
         self.mutation_func = self._get_mutation_implementation().mutate
         
+        # Public properties for serialization
+        self.mutation_type = mutation_type
+        self.probability = probability
+        
     def _get_mutation_implementation(self) -> AbstractMutation:
         match self.__mutation_type:
             case MutationMethodType.SINGLE_POINT:

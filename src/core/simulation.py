@@ -3,6 +3,7 @@ from math import floor
 import random
 import time
 from src.config.simulation_config import SimulationConfiguration
+from src.core.results_saver import SimulationResultsSaver, config_to_dict
 from src.core.selection import SelectionMethodType
 from src.core.unit import Unit
 
@@ -50,7 +51,7 @@ class Simulation:
             self._calculate_costs()
 
             # stuff for collecting metrics
-            self._update_metrics(epoch)
+            self._update_metrics()
 
             # select elite units
             # select units from population to cross
@@ -73,8 +74,17 @@ class Simulation:
             self._population = self._inverse_units(mutated_units)
         
         self._calculate_costs()
-        self._update_metrics(self._epochs_number)
+        self._update_metrics()
         self.elapsed_time = time.time() - start_time
+
+        # Save simulation results
+        try:
+            saver = SimulationResultsSaver()
+            config_dict = config_to_dict(self._config)
+            saver.save_results(self, config_dict)
+            print(f"Results saved to: {saver.get_simulation_dir()}")
+        except Exception as e:
+            print(f"Error saving results: {e}")
 
     def _calculate_selection_size(self) -> int:
         if SelectionMethodType.TOURNAMENT == self._config.selection_config.selection_type:
@@ -122,7 +132,7 @@ class Simulation:
     def _inverse_units(self, mutated_units: list[Unit]) -> list[Unit]:
         return [self._inversion_func(unit) for unit in mutated_units]
 
-    def _update_metrics(self, epoch: int) -> None:
+    def _update_metrics(self) -> None:
         # Find best cost depending on maximization/minimization
         if self._is_maximim_case:
             best_cost = max(unit.cost for unit in self._population)

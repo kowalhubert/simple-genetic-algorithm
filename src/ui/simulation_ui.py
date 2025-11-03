@@ -25,15 +25,16 @@ class SimulationUI:
     __COST_FUNCTION_DIMENSIONS_DEFAULT = 2
     
     __SELECTION_TYPE_DEFAULT = SelectionMethodType.BEST.value
-    __SELECTION_PERCENTAGE_DEFAULT = 20
+    __SELECTION_PERCENTAGE_DEFAULT = 50
     
     __CROSSING_FUNC_TYPE_DEFAULT = CrossingMethodType.SINGLE_POINT.value
+    __CROSSING_PERCENTAGE_DEFAULT = 80
     __CROSSING_GRAIN_SIZE_DEFAULT = 3
     
     __MUTATION_TYPE_DEFAULT = MutationMethodType.SINGLE_POINT.value
-    __MUTATION_PROBABILITY_DEFAULT = 20
+    __MUTATION_PROBABILITY_DEFAULT = 30
 
-    __INVERSION_PROBABILITY = 20
+    __INVERSION_PROBABILITY = 30
 
     __ELITE_STRATEGY_UNIT_COUNT = 1
 
@@ -151,6 +152,11 @@ class SimulationUI:
         )
         self.crossing_function_combo.grid(row=4, column=1, pady=8, sticky=(tk.W, tk.E))
 
+        ### crossing percentage
+        ttk.Label(frame, text="Crossing percentage (%):").grid(row=4, column=2, sticky=tk.W, pady=8)
+        self.crossing_percentage_var = tk.IntVar(value=self.__CROSSING_PERCENTAGE_DEFAULT)
+        ttk.Entry(frame, textvariable=self.crossing_percentage_var).grid(row=4, column=3, pady=8, sticky=(tk.W, tk.E))
+
         def on_crossing_function_change(event):
             selected_type = self.crossing_function_var.get()
 
@@ -226,8 +232,6 @@ class SimulationUI:
             lower_bound, upper_bound = suggested_bounds[0][0], suggested_bounds[1][0]
             unit_factory = UnitFactory(lower_bound, upper_bound, 6)
 
-            print(f'Bounds: {lower_bound} | {upper_bound}')
-
             # selection function config
             tournament_size = None
             if hasattr(self, 'tournament_size_label'):
@@ -242,7 +246,7 @@ class SimulationUI:
             if hasattr(self, 'crossing_grain_label'):
                grain = self.crossing_grain_var.get()
         
-            crossing_config = CrossingConfig(self.crossing_function_map[self.crossing_function_var.get()], unit_factory, self.elite_count_var.get(), grain=grain)
+            crossing_config = CrossingConfig(self.crossing_function_map[self.crossing_function_var.get()], self.crossing_percentage_var.get(), unit_factory, self.elite_count_var.get(), grain=grain)
 
             # mutation config
             mutation_config = MutationConfig(unit_factory, self.mutation_function_map[self.mutation_function_var.get()], self.mutation_probability_var.get())
@@ -285,6 +289,7 @@ class SimulationUI:
         if hasattr(self, 'crossing_grain_label'):
             self.crossing_grain_label.grid_remove()
             self.crossing_grain_entry.grid_remove()
+        self.crossing_percentage_var.set(self.__CROSSING_PERCENTAGE_DEFAULT)
 
         # mutation config
         self.mutation_function_var.set(self.__MUTATION_TYPE_DEFAULT)
