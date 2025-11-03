@@ -10,16 +10,29 @@ p1/
 │   ├── __init__.py
 │   ├── core/                     # Core genetic algorithm components
 │   │   ├── __init__.py
-│   │   ├── chromosome.py         # Chromosome representation
-│   │   └── cost_function.py      # Cost function definitions
+│   │   ├── cost_function.py
+│   │   ├── crossing.py
+│   │   ├── inversion.py
+│   │   ├── mutation.py
+│   │   ├── results_saver.py
+│   │   ├── selection.py
+│   │   ├── simulation.py
+│   │   └── unit.py
 │   ├── ui/                       # User interface components
 │   │   ├── __init__.py
-│   │   └── simulation_config_ui.py  # Configuration UI
+│   │   └── simulation_ui.py
 │   └── config/                   # Configuration management
 │       ├── __init__.py
-│       └── simulation_config.py # Simulation configuration classes
-├── main.py                       # Application entry point
-├── requirements.txt              # Python dependencies
+│       ├── cost_function_config.py
+│       ├── crossing_config.py
+│       ├── general_config.py
+│       ├── inversion_config.py
+│       ├── mutation_config.py
+│       ├── selection_config.py
+│       └── simulation_config.py
+├── main.py                       # Application entry point (launches Tkinter UI)
+├── requirements.txt              # Direct dependencies (human-maintained)
+├── requirements.lock.txt         # Fully pinned deps (auto-generated, optional)
 └── README.md                     # This file
 ```
 
@@ -38,10 +51,14 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the application:
+Run the application (launches the Tkinter UI):
 ```bash
 python main.py
 ```
+
+### Saving Results
+
+See detailed documentation for automatic results export in `RESULTS_SAVER_USAGE.md`.
 
 ## Module Dependencies
 
@@ -52,5 +69,6 @@ python main.py
 
 ## Dependencies
 
-- `benchmark-functions`: For optimization benchmark functions
-- `tkinter`: Built-in Python GUI library
+- `benchmark-functions` (via PyPI) – optimization benchmark functions
+- `matplotlib` – plotting in the UI
+- `tkinter` – built-in Python GUI library (comes with CPython on most platforms)
