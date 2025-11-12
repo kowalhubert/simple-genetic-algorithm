@@ -52,7 +52,7 @@ class TwoPointCrossing(AbstractCrossing):
     def _perform_cross(self, parent1: Unit, parent2: Unit):
         dim = len(parent1.real_values)
         if dim < 3:
-            return SinglePointCrossing(self.unit_factory).cross(parent1, parent2)
+            return SinglePointCrossing(self.probability, self.unit_factory).cross(parent1, parent2)
         # choose two points not at ends, so 1 .. dim-1
         p1, p2 = sorted(random.sample(range(1, dim), 2))
         child1_binaries = []

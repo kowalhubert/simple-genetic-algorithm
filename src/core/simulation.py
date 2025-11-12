@@ -17,6 +17,7 @@ class Simulation:
         self.best_cost_history = []
         self.avg_cost_history = []
         self.elapsed_time = None
+        self._global_best_cost = None
 
         self._cost_function = self._config.cost_function_config.cost_func
         self._population_size = self._config.general_config.population_size
@@ -135,14 +136,20 @@ class Simulation:
     def _update_metrics(self) -> None:
         # Find best cost depending on maximization/minimization
         if self._is_maximim_case:
-            best_cost = max(unit.cost for unit in self._population)
+            current_best = max(unit.cost for unit in self._population)
+            if self._global_best_cost is None or current_best > self._global_best_cost:
+                self._global_best_cost = current_best
+            best_cost = self._global_best_cost
         else:
-            best_cost = min(unit.cost for unit in self._population)
+            current_best = min(unit.cost for unit in self._population)
+            if self._global_best_cost is None or current_best < self._global_best_cost:
+                self._global_best_cost = current_best
+            best_cost = self._global_best_cost
 
         # Calculate average cost
         avg_cost = sum(unit.cost for unit in self._population) / len(self._population) if self._population else float('nan')
 
-        # Calculate standard deviation of costs
+        # Calculate standard deviation
         costs = [unit.cost for unit in self._population]
         if len(costs) > 1:
             mean = avg_cost
@@ -151,7 +158,6 @@ class Simulation:
         else:
             std_dev = 0.0
 
-        # Store in history
         self.std_cost_history.append(std_dev)
         self.best_cost_history.append(best_cost)
         self.avg_cost_history.append(avg_cost)
