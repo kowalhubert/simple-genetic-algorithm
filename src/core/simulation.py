@@ -105,7 +105,7 @@ class Simulation:
             for dim in range(self._dimesions):
                 val = random.uniform(lower_bounds[dim], upper_bounds[dim])
                 individual.append(val)
-            self._population.append(self._unit_factory.create_unit_with_real_values(individual))
+            self._population.append(Unit(real_values=individual))
             
     def _calculate_costs(self):
         for unit in self._population:

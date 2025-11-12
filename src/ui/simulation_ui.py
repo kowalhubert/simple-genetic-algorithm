@@ -17,8 +17,8 @@ from src.core.simulation import Simulation
 from src.core.unit import UnitFactory
 
 class SimulationUI:
-    __EPOCHS_NUMBER_DEFAULT = 10
-    __POPULATION_SIZE_DEFAULT = 10
+    __EPOCHS_NUMBER_DEFAULT = 100
+    __POPULATION_SIZE_DEFAULT = 100
     __CHROMOSOME_PRECISION_DEFAULT = 6
     
     __COST_FUNCTION_TYPE_DEFAULT = CostFunction.RASTRIGIN.name
@@ -230,7 +230,7 @@ class SimulationUI:
             suggested_bounds = cost_function_config.cost_func.suggested_bounds()
 
             lower_bound, upper_bound = suggested_bounds[0][0], suggested_bounds[1][0]
-            unit_factory = UnitFactory(lower_bound, upper_bound, 6)
+            unit_factory = UnitFactory(lower_bound, upper_bound)
 
             # selection function config
             tournament_size = None

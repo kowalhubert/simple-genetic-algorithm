@@ -1,4 +1,4 @@
-from src.core.crossing import AbstractCrossing, CrossingMethodType, GrainCrossing, SinglePointCrossing, TwoPointCrossing, UniformCrossing
+from src.core.crossing import AbstractCrossing, CrossingMethodType, GrainCrossing, SinglePointCrossing, TwoPointCrossing, UniformCrossing, LinearCrossing, ArithmeticCrossing, AlphaBlendCrossing, AlphaBetaBlendCrossing, MeanCrossing
 from src.core.unit import UnitFactory
 
 
@@ -9,7 +9,6 @@ class CrossingConfig:
 
         self.__grain = grain
         self.__crossing_type = crossing_type
-        self.__unit_factory = unit_factory
         self.elite_count = elite_count
         self.probability = probability
         self.crossing_func = self._get_crossing_implementation().cross
@@ -21,10 +20,20 @@ class CrossingConfig:
     def _get_crossing_implementation(self) -> AbstractCrossing:
         match self.__crossing_type:
             case CrossingMethodType.SINGLE_POINT:
-                return SinglePointCrossing(self.probability, self.__unit_factory)
+                return SinglePointCrossing(self.probability)
             case CrossingMethodType.TWO_POINT:
-                return TwoPointCrossing(self.probability, self.__unit_factory)
+                return TwoPointCrossing(self.probability)
             case CrossingMethodType.UNIFORM:
-                return UniformCrossing(self.probability, self.__unit_factory)
+                return UniformCrossing(self.probability)
             case CrossingMethodType.GRAIN:
-                return GrainCrossing(self.probability, self.__unit_factory, self.__grain)
+                return GrainCrossing(self.probability, grain_size=self.__grain)
+            case CrossingMethodType.LINEAR:
+                return LinearCrossing(self.probability)
+            case CrossingMethodType.ARITHMETIC:
+                return ArithmeticCrossing(self.probability)
+            case CrossingMethodType.ALPHA_BLEND:
+                return AlphaBlendCrossing(self.probability)
+            case CrossingMethodType.ALPHA_BETA_BLEND:
+                return AlphaBetaBlendCrossing(self.probability)
+            case CrossingMethodType.MEAN:
+                return MeanCrossing(self.probability)

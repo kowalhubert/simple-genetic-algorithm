@@ -7,6 +7,8 @@ class MutationMethodType(Enum):
     BOUNDARY = "Boundary"
     SINGLE_POINT = "Single-point"
     TWO_POINT = "Two-point"
+    UNIFORM = "Uniform"
+    GAUSSIAN = "Gaussian"
 
 class AbstractMutation(ABC):
     def __init__(self, probability: float, unit_factory: UnitFactory):
@@ -15,68 +17,59 @@ class AbstractMutation(ABC):
 
     @abstractmethod
     def mutate(self, unit: Unit) -> Unit:
-        """
-        Mutate a Unit and return a new Unit (with mutated real_values and binary_values).
-        """
         pass
 
 class BoundaryMutation(AbstractMutation):
-    """
-    Mutates a single gene in any dimension's binary chromosome to either all 0's or all 1's (min or max value for that dimension).
-    """
     def mutate(self, unit: Unit) -> Unit:
-        # Get the binary representation for all dimensions
-        binaries = unit.binary_values
-        mutated_binaries = []
-        for i, binary in enumerate(binaries):
-            bin_list = list(binary)
-            for j in range(len(bin_list)):
-                if random.random() < self.probability / 100:
-                    # Set the bit string to boundary: either all 0s (min) or all 1s (max) with 50% chance
-                    if random.random() < 0.5:
-                        bin_list = ['0'] * len(bin_list)
-                    else:
-                        bin_list = ['1'] * len(bin_list)
-                    break  # Only mutate one gene per dimension
-            mutated_binaries.append("".join(bin_list))
-        new_unit = self.unit_factory.create_unit_with_binary_values(mutated_binaries)
-        new_unit.cost = unit.cost
-        return new_unit
+        new_values = unit.real_values.copy()
+        for i in range(len(new_values)):
+            if random.random() < self.probability / 100:
+                new_values[i] = random.choice([self.unit_factory._lower_bound,
+                                               self.unit_factory._upper_bound])
+        return Unit(real_values=new_values, cost=unit.cost)
 
 class SinglePointMutation(AbstractMutation):
-    def mutate(self, unit: Unit) -> Unit:    
-        binaries = unit.binary_values
-        mutated_binaries = []
-        for binary in binaries:
-            if random.random() < self.probability / 100:
-                length = len(binary)
-                point = random.randint(0, length - 1)
-                bin_list = list(binary)
-                bin_list[point] = '0' if bin_list[point] == '1' else '1'
-                mutated_binaries.append("".join(bin_list))
-            else:
-                mutated_binaries.append(binary)
-        new_unit = self.unit_factory.create_unit_with_binary_values(mutated_binaries)
-        new_unit.cost = unit.cost
-        return new_unit
+    def mutate(self, unit: Unit) -> Unit:
+        new_values = unit.real_values.copy()
+        if random.random() < self.probability / 100:
+            idx = random.randint(0, len(new_values) - 1)
+            new_values[idx] = random.uniform(self.unit_factory._lower_bound, self.unit_factory._upper_bound)
+        return Unit(real_values=new_values, cost=unit.cost)
 
 class TwoPointMutation(AbstractMutation):
     def mutate(self, unit: Unit) -> Unit:
-        binaries = unit.binary_values
-        mutated_binaries = []
-        for binary in binaries:
-            bin_list = list(binary)
+        new_values = unit.real_values.copy()
+        if random.random() < self.probability / 100:
+            if len(new_values) < 2:
+                idx1 = idx2 = 0
+            else:
+                idx1, idx2 = sorted(random.sample(range(len(new_values)), 2))
+            for i in range(idx1, idx2 + 1):
+                new_values[i] = random.uniform(self.unit_factory._lower_bound, self.unit_factory._upper_bound)
+        return Unit(real_values=new_values, cost=unit.cost)
+    
+class UniformMutation(AbstractMutation):
+    def mutate(self, unit: Unit) -> Unit:
+        new_values = unit.real_values.copy()
+        for i in range(len(new_values)):
             if random.random() < self.probability / 100:
-                length = len(binary)
-                if length < 2:
-                    point1 = point2 = 0
-                else:
-                    point1, point2 = sorted(random.sample(range(length), 2))
-                for i in range(point1, point2 + 1):
-                    bin_list[i] = '0' if bin_list[i] == '1' else '1'
-            mutated_binaries.append("".join(bin_list))
-        new_unit = self.unit_factory.create_unit_with_binary_values(mutated_binaries)
-        new_unit.cost = unit.cost
-        return new_unit
+                # losowa wartość w całym zakresie
+                new_values[i] = random.uniform(self.unit_factory._lower_bound,
+                                               self.unit_factory._upper_bound)
+        return Unit(real_values=new_values, cost=unit.cost)
 
+class GaussianMutation(AbstractMutation):
+    def __init__(self, probability: float, unit_factory: UnitFactory, sigma: float):
+        super().__init__(probability, unit_factory)
+        self.sigma = sigma  # odchylenie standardowe Gaussa
 
+    def mutate(self, unit: Unit) -> Unit:
+        new_values = unit.real_values.copy()
+        for i in range(len(new_values)):
+            if random.random() < self.probability / 100:
+                # dodaj losowy szum Gaussa
+                new_values[i] += random.gauss(0, self.sigma)
+                # ograniczenie wartości do granic
+                new_values[i] = max(self.unit_factory._lower_bound,
+                                    min(self.unit_factory._upper_bound, new_values[i]))
+        return Unit(real_values=new_values, cost=unit.cost)
