@@ -53,7 +53,6 @@ class UniformMutation(AbstractMutation):
         new_values = unit.real_values.copy()
         for i in range(len(new_values)):
             if random.random() < self.probability / 100:
-                # losowa wartość w całym zakresie
                 new_values[i] = random.uniform(self.unit_factory._lower_bound,
                                                self.unit_factory._upper_bound)
         return Unit(real_values=new_values, cost=unit.cost)
@@ -61,15 +60,13 @@ class UniformMutation(AbstractMutation):
 class GaussianMutation(AbstractMutation):
     def __init__(self, probability: float, unit_factory: UnitFactory, sigma: float):
         super().__init__(probability, unit_factory)
-        self.sigma = sigma  # odchylenie standardowe Gaussa
+        self.sigma = sigma 
 
     def mutate(self, unit: Unit) -> Unit:
         new_values = unit.real_values.copy()
         for i in range(len(new_values)):
             if random.random() < self.probability / 100:
-                # dodaj losowy szum Gaussa
                 new_values[i] += random.gauss(0, self.sigma)
-                # ograniczenie wartości do granic
                 new_values[i] = max(self.unit_factory._lower_bound,
                                     min(self.unit_factory._upper_bound, new_values[i]))
         return Unit(real_values=new_values, cost=unit.cost)
