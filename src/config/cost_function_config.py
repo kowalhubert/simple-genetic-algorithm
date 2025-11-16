@@ -4,7 +4,6 @@ class CostFunctionConfig:
     def __init__(self, dimensions: int, cost_function: CostFunction) -> None:
         assert dimensions > 0
         assert cost_function is not None
-        if cost_function == CostFunction.CEC2014_F16: dimensions = 30
-        elif cost_function == CostFunction.CEC2014_F3: dimensions = 10
+        if cost_function == CostFunction.CEC2014_F3: dimensions = 10
         self.dimensions = dimensions
         self.cost_func = cost_function.func_class(dimensions)

@@ -1,4 +1,4 @@
-from src.core.mutation import AbstractMutation, MutationMethodType, BoundaryMutation, TwoPointMutation, SinglePointMutation, UniformMutation, GaussianMutation
+from src.core.mutation import AbstractMutation, MutationMethodType, UniformMutation, GaussianMutation
 from src.core.unit import UnitFactory
 
 
@@ -15,18 +15,11 @@ class MutationConfig:
 
         self.mutation_func = self._get_mutation_implementation().mutate
         
-        # Public properties for serialization
         self.mutation_type = mutation_type
         self.probability = probability
         
     def _get_mutation_implementation(self) -> AbstractMutation:
         match self.__mutation_type:
-            case MutationMethodType.SINGLE_POINT:
-                return SinglePointMutation(self.__probability, self.__unit_factory)
-            case MutationMethodType.TWO_POINT:
-                return TwoPointMutation(self.__probability, self.__unit_factory)
-            case MutationMethodType.BOUNDARY:
-                return BoundaryMutation(self.__probability, self.__unit_factory)
             case MutationMethodType.UNIFORM:
                 return UniformMutation(self.__probability, self.__unit_factory)
             case MutationMethodType.GAUSSIAN:

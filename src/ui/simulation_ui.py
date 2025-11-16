@@ -21,17 +21,16 @@ class SimulationUI:
     __POPULATION_SIZE_DEFAULT = 100
     __CHROMOSOME_PRECISION_DEFAULT = 6
     
-    __COST_FUNCTION_TYPE_DEFAULT = CostFunction.RASTRIGIN.name
+    __COST_FUNCTION_TYPE_DEFAULT = CostFunction.HYPERELLIPSOID.name
     __COST_FUNCTION_DIMENSIONS_DEFAULT = 2
     
     __SELECTION_TYPE_DEFAULT = SelectionMethodType.BEST.value
     __SELECTION_PERCENTAGE_DEFAULT = 50
     
-    __CROSSING_FUNC_TYPE_DEFAULT = CrossingMethodType.SINGLE_POINT.value
+    __CROSSING_FUNC_TYPE_DEFAULT = CrossingMethodType.LINEAR.value
     __CROSSING_PERCENTAGE_DEFAULT = 80
-    __CROSSING_GRAIN_SIZE_DEFAULT = 3
     
-    __MUTATION_TYPE_DEFAULT = MutationMethodType.SINGLE_POINT.value
+    __MUTATION_TYPE_DEFAULT = MutationMethodType.GAUSSIAN.value
     __MUTATION_PROBABILITY_DEFAULT = 30
 
     __INVERSION_PROBABILITY = 30
@@ -164,12 +163,6 @@ class SimulationUI:
                 self.crossing_grain_label.destroy()
                 self.crossing_grain_entry.destroy()
 
-            if selected_type == CrossingMethodType.GRAIN.value:
-                self.crossing_grain_var = tk.IntVar(value=self.__CROSSING_GRAIN_SIZE_DEFAULT)
-                self.crossing_grain_label = ttk.Label(frame, text="Grain:")
-                self.crossing_grain_label.grid(row=4, column=2, sticky=tk.W, pady=8)
-                self.crossing_grain_entry = ttk.Entry(frame, textvariable=self.crossing_grain_var)
-                self.crossing_grain_entry.grid(row=4, column=3, pady=8, sticky=(tk.W, tk.E))
 
         self.crossing_function_combo.bind("<<ComboboxSelected>>", on_crossing_function_change)
 

@@ -4,9 +4,6 @@ from enum import Enum
 import random
 
 class MutationMethodType(Enum):
-    BOUNDARY = "Boundary"
-    SINGLE_POINT = "Single-point"
-    TWO_POINT = "Two-point"
     UNIFORM = "Uniform"
     GAUSSIAN = "Gaussian"
 
@@ -18,35 +15,6 @@ class AbstractMutation(ABC):
     @abstractmethod
     def mutate(self, unit: Unit) -> Unit:
         pass
-
-class BoundaryMutation(AbstractMutation):
-    def mutate(self, unit: Unit) -> Unit:
-        new_values = unit.real_values.copy()
-        for i in range(len(new_values)):
-            if random.random() < self.probability / 100:
-                new_values[i] = random.choice([self.unit_factory._lower_bound,
-                                               self.unit_factory._upper_bound])
-        return Unit(real_values=new_values, cost=unit.cost)
-
-class SinglePointMutation(AbstractMutation):
-    def mutate(self, unit: Unit) -> Unit:
-        new_values = unit.real_values.copy()
-        if random.random() < self.probability / 100:
-            idx = random.randint(0, len(new_values) - 1)
-            new_values[idx] = random.uniform(self.unit_factory._lower_bound, self.unit_factory._upper_bound)
-        return Unit(real_values=new_values, cost=unit.cost)
-
-class TwoPointMutation(AbstractMutation):
-    def mutate(self, unit: Unit) -> Unit:
-        new_values = unit.real_values.copy()
-        if random.random() < self.probability / 100:
-            if len(new_values) < 2:
-                idx1 = idx2 = 0
-            else:
-                idx1, idx2 = sorted(random.sample(range(len(new_values)), 2))
-            for i in range(idx1, idx2 + 1):
-                new_values[i] = random.uniform(self.unit_factory._lower_bound, self.unit_factory._upper_bound)
-        return Unit(real_values=new_values, cost=unit.cost)
     
 class UniformMutation(AbstractMutation):
     def mutate(self, unit: Unit) -> Unit:

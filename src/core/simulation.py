@@ -111,20 +111,26 @@ class Simulation:
         for unit in self._population:
             unit.cost = self._cost_function(unit.real_values)
 
-    def _cross_selected_units(self, selected_units: int):
+    def _cross_selected_units(self, selected_units: list[Unit]):
         new_population = []
         num_offspring = self._population_size - self._elite_units_count
 
         while len(new_population) < num_offspring:
-            # Randomly pick two parents
             parent1, parent2 = random.sample(selected_units, 2)
-            # crossing_func is expected to return a tuple: (new1, new2)
-            new1, new2 = self._crossing_func(parent1, parent2)
-            for child in (new1, new2):
+            candidates = self._crossing_func(parent1, parent2)
+
+            if isinstance(candidates, tuple):
+                candidates = list(candidates)
+            for u in candidates:
+                u.cost = self._cost_function(u.real_values)
+
+            candidates.sort(key=lambda u: u.cost, reverse=self._is_maximim_case)
+            for child in candidates[:2]:
                 if len(new_population) < num_offspring:
                     new_population.append(child)
                 else:
                     break
+
         return new_population
 
     def _mutate_units(self, crossed_units: list[Unit]) -> list[Unit]:
@@ -134,7 +140,6 @@ class Simulation:
         return [self._inversion_func(unit) for unit in mutated_units]
 
     def _update_metrics(self) -> None:
-        # Find best cost depending on maximization/minimization
         if self._is_maximim_case:
             current_best = max(unit.cost for unit in self._population)
             if self._global_best_cost is None or current_best > self._global_best_cost:
